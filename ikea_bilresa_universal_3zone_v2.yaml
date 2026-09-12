@@ -1,0 +1,791 @@
+blueprint:
+  name: "IKEA BILRESA 3-Zone Universal Controller (v2)"
+  description: >-
+    Generic Matter/Thread blueprint for the IKEA BILRESA scroll wheel.
+
+
+    THREE INDEPENDENT ZONES. Each zone has its own wheel-increase sensor,
+    wheel-decrease sensor, button event entity, and fully custom single
+    click / double click / long press actions. Clicks are never hard-coded
+    to a device type — wire them to lights, fans, climate, scripts, scenes,
+    media players, or anything else via Home Assistant's action selector.
+
+
+    SCROLL WHEEL USAGE — pick what each zone's wheel controls:
+      - Light   -> dims brighter / darker
+      - Fan     -> raises / lowers fan speed
+      - Climate -> raises / lowers the target temperature
+    Only ONE target-entity field is shown per zone; it's read differently
+    depending on which mode you pick above it, so you don't have to fill in
+    three separate entity pickers per zone.
+
+
+    SMOOTHNESS FIX (v2): this automation now runs in `mode: single` with a
+    150ms trailing debounce, matching the fix the Atomic BILRESA blueprint
+    shipped in its v1.0.1 for "double-trigger" bouncing (mode: queued/parallel
+    both re-run or overlap on duplicate state changes; mode: single silently
+    drops the duplicate). If v1 of this blueprint felt rougher than Atomic,
+    this was almost certainly why.
+
+    Note: BILRESA firmware itself reports the first wheel notch instantly,
+    then batches further notches roughly every 500ms. That's a hardware/
+    firmware ceiling — no blueprint logic can make it feel like a smooth
+    analog dimmer until Home Assistant's Matter integration exposes
+    per-notch velocity data.
+
+
+    SETUP: enable the BILRESA's hidden entities first. The scroll-direction
+    sensors are usually numbered 1,2 / 4,5 / 7,8 (one increase/decrease pair
+    per zone) and the button event entities are usually 3, 6, 9 - map them
+    below according to what Home Assistant actually shows for your device.
+  domain: automation
+  author: Saarans
+  homeassistant:
+    min_version: "2024.6.0"
+
+  input:
+    zone_1:
+      name: "ZONE 1"
+      icon: mdi:numeric-1-box-outline
+      description: "First scroll/button zone. Default wheel usage: Light."
+      collapsed: true
+      input:
+        zone1_mode:
+          name: "Wheel usage"
+          description: "What turning the wheel in this zone does."
+          default: light
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: "Light — brighter / darker"
+                  value: light
+                - label: "Fan — speed up / down"
+                  value: fan
+                - label: "Climate — raise / lower target temp"
+                  value: climate
+
+        zone1_target:
+          name: "Target entity"
+          description: "The light, fan, or climate entity this zone's wheel controls (pick one entity matching the mode above)."
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: light
+                - domain: fan
+                - domain: climate
+
+        zone1_step_pct:
+          name: "Step — Light/Fan (%)"
+          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 50
+              step: 1
+              unit_of_measurement: "%"
+              mode: slider
+
+        zone1_step_temp:
+          name: "Step — Climate (°)"
+          description: "Target-temperature change per wheel notch. Unused in Light/Fan mode."
+          default: 0.5
+          selector:
+            number:
+              min: 0.5
+              max: 5
+              step: 0.5
+              unit_of_measurement: "°"
+              mode: slider
+
+        zone1_up:
+          name: "Wheel: increase sensor"
+          description: "Fires when this zone is scrolled toward brighter / faster / warmer."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone1_down:
+          name: "Wheel: decrease sensor"
+          description: "Fires when this zone is scrolled toward dimmer / slower / cooler."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone1_button:
+          name: "Button event"
+          description: "The event entity for this zone's click gestures (usually the '3' entity for Zone 1)."
+          selector:
+            entity:
+              filter:
+                - domain: event
+                  integration: matter
+
+        zone1_single:
+          name: "Single click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone1_double:
+          name: "Double click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone1_hold:
+          name: "Long press"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+    zone_2:
+      name: "ZONE 2"
+      icon: mdi:numeric-2-box-outline
+      description: "Second scroll/button zone. Default wheel usage: Fan."
+      collapsed: true
+      input:
+        zone2_mode:
+          name: "Wheel usage"
+          description: "What turning the wheel in this zone does."
+          default: fan
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: "Light — brighter / darker"
+                  value: light
+                - label: "Fan — speed up / down"
+                  value: fan
+                - label: "Climate — raise / lower target temp"
+                  value: climate
+
+        zone2_target:
+          name: "Target entity"
+          description: "The light, fan, or climate entity this zone's wheel controls (pick one entity matching the mode above)."
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: light
+                - domain: fan
+                - domain: climate
+
+        zone2_step_pct:
+          name: "Step — Light/Fan (%)"
+          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 50
+              step: 1
+              unit_of_measurement: "%"
+              mode: slider
+
+        zone2_step_temp:
+          name: "Step — Climate (°)"
+          description: "Target-temperature change per wheel notch. Unused in Light/Fan mode."
+          default: 0.5
+          selector:
+            number:
+              min: 0.5
+              max: 5
+              step: 0.5
+              unit_of_measurement: "°"
+              mode: slider
+
+        zone2_up:
+          name: "Wheel: increase sensor"
+          description: "Fires when this zone is scrolled toward brighter / faster / warmer."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone2_down:
+          name: "Wheel: decrease sensor"
+          description: "Fires when this zone is scrolled toward dimmer / slower / cooler."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone2_button:
+          name: "Button event"
+          description: "The event entity for this zone's click gestures (usually the '6' entity for Zone 2)."
+          selector:
+            entity:
+              filter:
+                - domain: event
+                  integration: matter
+
+        zone2_single:
+          name: "Single click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone2_double:
+          name: "Double click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone2_hold:
+          name: "Long press"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+    zone_3:
+      name: "ZONE 3"
+      icon: mdi:numeric-3-box-outline
+      description: "Third/final scroll/button zone. Default wheel usage: Climate."
+      collapsed: true
+      input:
+        zone3_mode:
+          name: "Wheel usage"
+          description: "What turning the wheel in this zone does."
+          default: climate
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: "Light — brighter / darker"
+                  value: light
+                - label: "Fan — speed up / down"
+                  value: fan
+                - label: "Climate — raise / lower target temp"
+                  value: climate
+
+        zone3_target:
+          name: "Target entity"
+          description: "The light, fan, or climate entity this zone's wheel controls (pick one entity matching the mode above)."
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: light
+                - domain: fan
+                - domain: climate
+
+        zone3_step_pct:
+          name: "Step — Light/Fan (%)"
+          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 50
+              step: 1
+              unit_of_measurement: "%"
+              mode: slider
+
+        zone3_step_temp:
+          name: "Step — Climate (°)"
+          description: "Target-temperature change per wheel notch. Unused in Light/Fan mode."
+          default: 0.5
+          selector:
+            number:
+              min: 0.5
+              max: 5
+              step: 0.5
+              unit_of_measurement: "°"
+              mode: slider
+
+        zone3_up:
+          name: "Wheel: increase sensor"
+          description: "Fires when this zone is scrolled toward brighter / faster / warmer."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone3_down:
+          name: "Wheel: decrease sensor"
+          description: "Fires when this zone is scrolled toward dimmer / slower / cooler."
+          selector:
+            entity:
+              filter:
+                - domain: sensor
+                  integration: matter
+
+        zone3_button:
+          name: "Button event"
+          description: "The event entity for this zone's click gestures (usually the '9' entity for Zone 3)."
+          selector:
+            entity:
+              filter:
+                - domain: event
+                  integration: matter
+
+        zone3_single:
+          name: "Single click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone3_double:
+          name: "Double click"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+        zone3_hold:
+          name: "Long press"
+          description: "Any Home Assistant action(s). Leave empty for no action."
+          default: []
+          selector:
+            action: {}
+
+mode: single
+max_exceeded: silent
+
+variables:
+  z1_mode: !input zone1_mode
+  z1_target: !input zone1_target
+  z1_step_pct: !input zone1_step_pct
+  z1_step_temp: !input zone1_step_temp
+  z2_mode: !input zone2_mode
+  z2_target: !input zone2_target
+  z2_step_pct: !input zone2_step_pct
+  z2_step_temp: !input zone2_step_temp
+  z3_mode: !input zone3_mode
+  z3_target: !input zone3_target
+  z3_step_pct: !input zone3_step_pct
+  z3_step_temp: !input zone3_step_temp
+
+triggers:
+  - trigger: state
+    entity_id: !input zone1_up
+    id: z1_up
+  - trigger: state
+    entity_id: !input zone1_down
+    id: z1_down
+  - trigger: state
+    entity_id: !input zone1_button
+    id: z1_button
+
+  - trigger: state
+    entity_id: !input zone2_up
+    id: z2_up
+  - trigger: state
+    entity_id: !input zone2_down
+    id: z2_down
+  - trigger: state
+    entity_id: !input zone2_button
+    id: z2_button
+
+  - trigger: state
+    entity_id: !input zone3_up
+    id: z3_up
+  - trigger: state
+    entity_id: !input zone3_down
+    id: z3_down
+  - trigger: state
+    entity_id: !input zone3_button
+    id: z3_button
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ trigger.to_state is not none
+         and trigger.to_state.state not in ['unknown', 'unavailable']
+         and (trigger.from_state is none or trigger.from_state.state not in ['unknown', 'unavailable']) }}
+
+actions:
+  - choose:
+      # ======================================================
+      # ZONE 1 — WHEEL: INCREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z1_up
+          - condition: template
+            value_template: "{{ z1_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z1_mode == 'light' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z1_target) == 'off' }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z1_target }}"
+                            data:
+                              brightness_pct: "{{ [z1_step_pct | float, 100] | min }}"
+                              transition: 0
+                      - conditions: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z1_target }}"
+                            data:
+                              brightness_step_pct: "{{ z1_step_pct | float }}"
+                              transition: 0
+              - conditions: "{{ z1_mode == 'fan' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z1_target) == 'off' }}"
+                        sequence:
+                          - action: fan.turn_on
+                            target:
+                              entity_id: "{{ z1_target }}"
+                            data:
+                              percentage: "{{ [z1_step_pct | float, 100] | min | round(0) }}"
+                      - conditions: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: fan.set_percentage
+                            target:
+                              entity_id: "{{ z1_target }}"
+                            data:
+                              percentage: >-
+                                {{ [[ (state_attr(z1_target, 'percentage') | float(0)) + (z1_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z1_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z1_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z1_target, 'temperature') | float(21)) + (z1_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 1 — WHEEL: DECREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z1_down
+          - condition: template
+            value_template: "{{ z1_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z1_mode == 'light' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ z1_target }}"
+                    data:
+                      brightness_step_pct: "{{ 0 - (z1_step_pct | float) }}"
+                      transition: 0
+              - conditions: "{{ z1_mode == 'fan' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: fan.set_percentage
+                    target:
+                      entity_id: "{{ z1_target }}"
+                    data:
+                      percentage: >-
+                        {{ [[ (state_attr(z1_target, 'percentage') | float(0)) - (z1_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z1_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z1_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z1_target, 'temperature') | float(21)) - (z1_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 1 — BUTTON
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z1_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_1' }}"
+        sequence: !input zone1_single
+
+      - conditions:
+          - condition: trigger
+            id: z1_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_2' }}"
+        sequence: !input zone1_double
+
+      - conditions:
+          - condition: trigger
+            id: z1_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'long_press' }}"
+        sequence: !input zone1_hold
+
+      # ======================================================
+      # ZONE 2 — WHEEL: INCREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z2_up
+          - condition: template
+            value_template: "{{ z2_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z2_mode == 'light' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z2_target) == 'off' }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z2_target }}"
+                            data:
+                              brightness_pct: "{{ [z2_step_pct | float, 100] | min }}"
+                              transition: 0
+                      - conditions: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z2_target }}"
+                            data:
+                              brightness_step_pct: "{{ z2_step_pct | float }}"
+                              transition: 0
+              - conditions: "{{ z2_mode == 'fan' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z2_target) == 'off' }}"
+                        sequence:
+                          - action: fan.turn_on
+                            target:
+                              entity_id: "{{ z2_target }}"
+                            data:
+                              percentage: "{{ [z2_step_pct | float, 100] | min | round(0) }}"
+                      - conditions: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: fan.set_percentage
+                            target:
+                              entity_id: "{{ z2_target }}"
+                            data:
+                              percentage: >-
+                                {{ [[ (state_attr(z2_target, 'percentage') | float(0)) + (z2_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z2_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z2_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z2_target, 'temperature') | float(21)) + (z2_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 2 — WHEEL: DECREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z2_down
+          - condition: template
+            value_template: "{{ z2_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z2_mode == 'light' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ z2_target }}"
+                    data:
+                      brightness_step_pct: "{{ 0 - (z2_step_pct | float) }}"
+                      transition: 0
+              - conditions: "{{ z2_mode == 'fan' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: fan.set_percentage
+                    target:
+                      entity_id: "{{ z2_target }}"
+                    data:
+                      percentage: >-
+                        {{ [[ (state_attr(z2_target, 'percentage') | float(0)) - (z2_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z2_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z2_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z2_target, 'temperature') | float(21)) - (z2_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 2 — BUTTON
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z2_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_1' }}"
+        sequence: !input zone2_single
+
+      - conditions:
+          - condition: trigger
+            id: z2_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_2' }}"
+        sequence: !input zone2_double
+
+      - conditions:
+          - condition: trigger
+            id: z2_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'long_press' }}"
+        sequence: !input zone2_hold
+
+      # ======================================================
+      # ZONE 3 — WHEEL: INCREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z3_up
+          - condition: template
+            value_template: "{{ z3_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z3_mode == 'light' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z3_target) == 'off' }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z3_target }}"
+                            data:
+                              brightness_pct: "{{ [z3_step_pct | float, 100] | min }}"
+                              transition: 0
+                      - conditions: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: light.turn_on
+                            target:
+                              entity_id: "{{ z3_target }}"
+                            data:
+                              brightness_step_pct: "{{ z3_step_pct | float }}"
+                              transition: 0
+              - conditions: "{{ z3_mode == 'fan' }}"
+                sequence:
+                  - choose:
+                      - conditions: "{{ states(z3_target) == 'off' }}"
+                        sequence:
+                          - action: fan.turn_on
+                            target:
+                              entity_id: "{{ z3_target }}"
+                            data:
+                              percentage: "{{ [z3_step_pct | float, 100] | min | round(0) }}"
+                      - conditions: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                        sequence:
+                          - action: fan.set_percentage
+                            target:
+                              entity_id: "{{ z3_target }}"
+                            data:
+                              percentage: >-
+                                {{ [[ (state_attr(z3_target, 'percentage') | float(0)) + (z3_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z3_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z3_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z3_target, 'temperature') | float(21)) + (z3_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 3 — WHEEL: DECREASE
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z3_down
+          - condition: template
+            value_template: "{{ z3_target not in ['', none] }}"
+        sequence:
+          - choose:
+              - conditions: "{{ z3_mode == 'light' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ z3_target }}"
+                    data:
+                      brightness_step_pct: "{{ 0 - (z3_step_pct | float) }}"
+                      transition: 0
+              - conditions: "{{ z3_mode == 'fan' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: fan.set_percentage
+                    target:
+                      entity_id: "{{ z3_target }}"
+                    data:
+                      percentage: >-
+                        {{ [[ (state_attr(z3_target, 'percentage') | float(0)) - (z3_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+              - conditions: "{{ z3_mode == 'climate' }}"
+                sequence:
+                  - condition: template
+                    value_template: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ z3_target }}"
+                    data:
+                      temperature: >-
+                        {{ (state_attr(z3_target, 'temperature') | float(21)) - (z3_step_temp | float) }}
+
+      # ======================================================
+      # ZONE 3 — BUTTON
+      # ======================================================
+      - conditions:
+          - condition: trigger
+            id: z3_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_1' }}"
+        sequence: !input zone3_single
+
+      - conditions:
+          - condition: trigger
+            id: z3_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'multi_press_2' }}"
+        sequence: !input zone3_double
+
+      - conditions:
+          - condition: trigger
+            id: z3_button
+          - condition: template
+            value_template: "{{ trigger.to_state.attributes.event_type | default('') == 'long_press' }}"
+        sequence: !input zone3_hold
+
+  # Trailing debounce — matches Atomic's v1.0.1 fix for double-trigger bouncing.
+  # mode: single (above) drops any duplicate trigger that arrives while this
+  # run is in flight; this delay extends that "busy" window a little so a
+  # near-simultaneous duplicate state change right after the action also gets
+  # dropped instead of queued.
+  - delay:
+      milliseconds: 150
