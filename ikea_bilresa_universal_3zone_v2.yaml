@@ -77,8 +77,8 @@ blueprint:
                 - domain: climate
 
         zone1_step_pct:
-          name: "Step — Light/Fan (%)"
-          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          name: "Step — Light (%)"
+          description: "Brightness change per wheel notch in Light mode. Unused in Fan mode (Fan always steps by exactly one of the fan's own presets, read from the entity) and Climate mode."
           default: 10
           selector:
             number:
@@ -181,8 +181,8 @@ blueprint:
                 - domain: climate
 
         zone2_step_pct:
-          name: "Step — Light/Fan (%)"
-          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          name: "Step — Light (%)"
+          description: "Brightness change per wheel notch in Light mode. Unused in Fan mode (Fan always steps by exactly one of the fan's own presets, read from the entity) and Climate mode."
           default: 10
           selector:
             number:
@@ -285,8 +285,8 @@ blueprint:
                 - domain: climate
 
         zone3_step_pct:
-          name: "Step — Light/Fan (%)"
-          description: "Brightness or fan-speed change per wheel notch. Unused in Climate mode."
+          name: "Step — Light (%)"
+          description: "Brightness change per wheel notch in Light mode. Unused in Fan mode (Fan always steps by exactly one of the fan's own presets, read from the entity) and Climate mode."
           default: 10
           selector:
             number:
@@ -409,7 +409,9 @@ conditions:
     value_template: >-
       {{ trigger.to_state is not none
          and trigger.to_state.state not in ['unknown', 'unavailable']
-         and (trigger.from_state is none or trigger.from_state.state not in ['unknown', 'unavailable']) }}
+         and (trigger.from_state is none or trigger.from_state.state not in ['unknown', 'unavailable'])
+         and (trigger.id not in ['z1_up', 'z1_down', 'z2_up', 'z2_down', 'z3_up', 'z3_down']
+              or (trigger.to_state.state | int(0)) != 0) }}
 
 actions:
   - choose:
@@ -451,7 +453,7 @@ actions:
                             target:
                               entity_id: "{{ z1_target }}"
                             data:
-                              percentage: "{{ [z1_step_pct | float, 100] | min | round(0) }}"
+                              percentage: "{{ state_attr(z1_target, 'percentage_step') | float(20) }}"
                       - conditions: "{{ states(z1_target) not in ['off', 'unavailable', 'unknown'] }}"
                         sequence:
                           - action: fan.set_percentage
@@ -459,7 +461,7 @@ actions:
                               entity_id: "{{ z1_target }}"
                             data:
                               percentage: >-
-                                {{ [[ (state_attr(z1_target, 'percentage') | float(0)) + (z1_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                                {{ [[ (state_attr(z1_target, 'percentage') | float(0)) + (state_attr(z1_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z1_mode == 'climate' }}"
                 sequence:
                   - condition: template
@@ -502,7 +504,7 @@ actions:
                       entity_id: "{{ z1_target }}"
                     data:
                       percentage: >-
-                        {{ [[ (state_attr(z1_target, 'percentage') | float(0)) - (z1_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                        {{ [[ (state_attr(z1_target, 'percentage') | float(0)) - (state_attr(z1_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z1_mode == 'climate' }}"
                 sequence:
                   - condition: template
@@ -578,7 +580,7 @@ actions:
                             target:
                               entity_id: "{{ z2_target }}"
                             data:
-                              percentage: "{{ [z2_step_pct | float, 100] | min | round(0) }}"
+                              percentage: "{{ state_attr(z2_target, 'percentage_step') | float(20) }}"
                       - conditions: "{{ states(z2_target) not in ['off', 'unavailable', 'unknown'] }}"
                         sequence:
                           - action: fan.set_percentage
@@ -586,7 +588,7 @@ actions:
                               entity_id: "{{ z2_target }}"
                             data:
                               percentage: >-
-                                {{ [[ (state_attr(z2_target, 'percentage') | float(0)) + (z2_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                                {{ [[ (state_attr(z2_target, 'percentage') | float(0)) + (state_attr(z2_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z2_mode == 'climate' }}"
                 sequence:
                   - condition: template
@@ -629,7 +631,7 @@ actions:
                       entity_id: "{{ z2_target }}"
                     data:
                       percentage: >-
-                        {{ [[ (state_attr(z2_target, 'percentage') | float(0)) - (z2_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                        {{ [[ (state_attr(z2_target, 'percentage') | float(0)) - (state_attr(z2_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z2_mode == 'climate' }}"
                 sequence:
                   - condition: template
@@ -705,7 +707,7 @@ actions:
                             target:
                               entity_id: "{{ z3_target }}"
                             data:
-                              percentage: "{{ [z3_step_pct | float, 100] | min | round(0) }}"
+                              percentage: "{{ state_attr(z3_target, 'percentage_step') | float(20) }}"
                       - conditions: "{{ states(z3_target) not in ['off', 'unavailable', 'unknown'] }}"
                         sequence:
                           - action: fan.set_percentage
@@ -713,7 +715,7 @@ actions:
                               entity_id: "{{ z3_target }}"
                             data:
                               percentage: >-
-                                {{ [[ (state_attr(z3_target, 'percentage') | float(0)) + (z3_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                                {{ [[ (state_attr(z3_target, 'percentage') | float(0)) + (state_attr(z3_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z3_mode == 'climate' }}"
                 sequence:
                   - condition: template
@@ -756,7 +758,7 @@ actions:
                       entity_id: "{{ z3_target }}"
                     data:
                       percentage: >-
-                        {{ [[ (state_attr(z3_target, 'percentage') | float(0)) - (z3_step_pct | float), 0 ] | max, 100] | min | round(0) }}
+                        {{ [[ (state_attr(z3_target, 'percentage') | float(0)) - (state_attr(z3_target, 'percentage_step') | float(20)), 0 ] | max, 100] | min | round(0) }}
               - conditions: "{{ z3_mode == 'climate' }}"
                 sequence:
                   - condition: template
