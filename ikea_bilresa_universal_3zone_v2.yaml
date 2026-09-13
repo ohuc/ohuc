@@ -469,7 +469,9 @@ actions:
                       entity_id: "{{ z1_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z1_target, 'temperature') | float(21)) + (z1_step_temp | float) }}
+                        {{ [[ (state_attr(z1_target, 'temperature') | float(21)) + (z1_step_temp | float),
+                              state_attr(z1_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z1_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 1 — WHEEL: DECREASE
@@ -510,7 +512,9 @@ actions:
                       entity_id: "{{ z1_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z1_target, 'temperature') | float(21)) - (z1_step_temp | float) }}
+                        {{ [[ (state_attr(z1_target, 'temperature') | float(21)) - (z1_step_temp | float),
+                              state_attr(z1_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z1_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 1 — BUTTON
@@ -592,7 +596,9 @@ actions:
                       entity_id: "{{ z2_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z2_target, 'temperature') | float(21)) + (z2_step_temp | float) }}
+                        {{ [[ (state_attr(z2_target, 'temperature') | float(21)) + (z2_step_temp | float),
+                              state_attr(z2_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z2_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 2 — WHEEL: DECREASE
@@ -633,7 +639,9 @@ actions:
                       entity_id: "{{ z2_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z2_target, 'temperature') | float(21)) - (z2_step_temp | float) }}
+                        {{ [[ (state_attr(z2_target, 'temperature') | float(21)) - (z2_step_temp | float),
+                              state_attr(z2_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z2_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 2 — BUTTON
@@ -715,7 +723,9 @@ actions:
                       entity_id: "{{ z3_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z3_target, 'temperature') | float(21)) + (z3_step_temp | float) }}
+                        {{ [[ (state_attr(z3_target, 'temperature') | float(21)) + (z3_step_temp | float),
+                              state_attr(z3_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z3_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 3 — WHEEL: DECREASE
@@ -756,7 +766,9 @@ actions:
                       entity_id: "{{ z3_target }}"
                     data:
                       temperature: >-
-                        {{ (state_attr(z3_target, 'temperature') | float(21)) - (z3_step_temp | float) }}
+                        {{ [[ (state_attr(z3_target, 'temperature') | float(21)) - (z3_step_temp | float),
+                              state_attr(z3_target, 'min_temp') | float(16) ] | max,
+                              state_attr(z3_target, 'max_temp') | float(30) ] | min }}
 
       # ======================================================
       # ZONE 3 — BUTTON
